@@ -1,6 +1,11 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 
+# Import fungsi dari modul-modul yang baru dibuat
+from modules.courses import get_courses
+from modules.students import get_students
+from modules.assignments import get_assignments
+
 
 class SimpleHandler(BaseHTTPRequestHandler):
 
@@ -17,31 +22,11 @@ class SimpleHandler(BaseHTTPRequestHandler):
         elif self.path == "/health":
             self.send_json({"status": "ok"})
         elif self.path == "/courses":
-            self.send_json({
-                "courses": [{
-                    "id": 1,
-                    "name": "Pemrograman Sisi Server"
-                }, {
-                    "id": 2,
-                    "name": "Basis Data"
-                }]
-            })
+            self.send_json({"courses": get_courses()})
         elif self.path == "/students":
-            self.send_json({
-                "students": [{
-                    "id": 1,
-                    "name": "Andi"
-                }, {
-                    "id": 2,
-                    "name": "Siti"
-                }]
-            })
+            self.send_json({"students": get_students()})
         elif self.path == "/assignments":
-            self.send_json(
-                {"assignments": [{
-                    "id": 1,
-                    "title": "Backend Fundamentals"
-                }]})
+            self.send_json({"assignments": get_assignments()})
         else:
             self.send_json({"detail": "Not Found"}, 404)
 
