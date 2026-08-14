@@ -2,37 +2,50 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 
 
-class Handler(BaseHTTPRequestHandler):
+class SimpleHandler(BaseHTTPRequestHandler):
 
-    def do_GET(self):
-        # 1. Tentukan status code & data berdasarkan endpoint
-        if self.path == "/hello":
-            status_code = 200
-            data = {"message": "Hello from backend"}
-        elif self.path == "/students":
-            status_code = 200
-            data = {"students": ["Fiola", "Ahmad", "Budi"]}
-        elif self.path == "/courses":
-            status_code = 200
-            data = {"courses": ["Pemrograman Sisi Server", "Basis Data"]}
-        elif self.path == "/health":
-            status_code = 200
-            data = {"status": "OK", "uptime": "healthy"}
-        else:
-            status_code = 404
-            data = {"error": "Not found"}
-
-        # 2. KIRIM STATUS RESPONSE TERLEBIH DAHULU (PENTING!)
-        self.send_response(status_code)
-
-        # 3. Kirim Header Content-Type
+    def send_json(self, data, status=200):
+        body = json.dumps(data).encode("utf-8")
+        self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.end_headers()
+        self.wfile.write(body)
 
-        # 4. Kirim Body Response
-        self.wfile.write(json.dumps(data).encode())
+    def do_GET(self):
+        if self.path == "/":
+            self.send_json({"message": "Simple LMS Backend"})
+        elif self.path == "/health":
+            self.send_json({"status": "ok"})
+        elif self.path == "/courses":
+            self.send_json({
+                "courses": [{
+                    "id": 1,
+                    "name": "Pemrograman Sisi Server"
+                }, {
+                    "id": 2,
+                    "name": "Basis Data"
+                }]
+            })
+        elif self.path == "/students":
+            self.send_json({
+                "students": [{
+                    "id": 1,
+                    "name": "Andi"
+                }, {
+                    "id": 2,
+                    "name": "Siti"
+                }]
+            })
+        elif self.path == "/assignments":
+            self.send_json(
+                {"assignments": [{
+                    "id": 1,
+                    "title": "Backend Fundamentals"
+                }]})
+        else:
+            self.send_json({"detail": "Not Found"}, 404)
 
 
-server = HTTPServer(("localhost", 8000), Handler)
+server = HTTPServer(("localhost", 8000), SimpleHandler)
 print("Server running at http://localhost:8000")
 server.serve_forever()
