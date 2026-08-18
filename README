@@ -39,3 +39,31 @@
    ```cmd
    .venv\Scripts\activate.bat
    python server.py
+
+## Week 3: Docker Containerization & Multi-Container Setup
+
+## Ringkasan Kegiatan
+- Pemahaman konsep dasar kontainerisasi (Image, Container, Dockerfile, Volume, dan Network).
+- Pembuatan custom Docker image menggunakan base image python:3.12-slim.
+- Penyusunan konfigurasi compose.yaml untuk mengorkestrasi multi-container (Aplikasi Python Backend & Database PostgreSQL 17).
+- Penerapan Persistent Volume (postgres_data) agar data PostgreSQL tetap tersimpan saat container di-restart.
+- Pengelolaan konfigurasi environment variable secara aman menggunakan file .env dan .env.example.
+
+## Cara Menjalankan Stack (Week 3)
+(Dijalankan setelah Docker Desktop aktif)
+
+1. **Jalankan Multi-Container Stack:**
+    ```cmd
+    docker compose up --build -d
+
+2. **Cek Status Container:**
+    ```cmd
+    docker compose ps
+
+3. **Uji Endpoint Health Check Database:**
+    ```cmd
+    http://localhost:8000/health
+
+4. **Hentikan Stack:**
+    ```cmd
+    docker compose down
