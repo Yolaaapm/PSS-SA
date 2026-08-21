@@ -68,22 +68,86 @@
     ```cmd
     docker compose down
 
+# Modul 5: Database Optimization & Caching (Week 5)
+
+Dokumentasi eksperimen performa database, optimasi query ORM, pengujian indeks, dan integrasi Redis caching pada Django.
+
+---
+
+## 1. Environment & Setup
+- **Database**: SQLite3
+- **Dataset Size**: 10.000 records `Course`, 300 records `Lesson`, 1 `Lecturer User`
+- **Container Service**: Redis 7 Alpine (`week5_redis` via Docker on port `6379`)
+- **Measurement Tools**: `CaptureQueriesContext`, `time.time()`, and `QuerySet.explain()`
+
+---
+
+## 2. Performance Benchmark Summary
+
+| Skenario Pengujian | Target Relasi / Pola | Before Queries | After Queries | Before Time (ms) | After Time (ms) | Improvement / Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Lab B: Course + Lecturer** | ForeignKey (`select_related`) | 101 | 1 | 65.238,39 ms | 5.152,49 ms | ~92.1% time reduction |
+| **Lab C: Course + Lessons** | Reverse FK (`prefetch_related`) | 51 | 2 | 290,91 ms | 5.224,26 ms* | Query count reduced by 96% |
+| **Lab D: Course Filter** | `is_active` & `title` Indexing | `SCAN catalog_course` | `SEARCH USING INDEX` | n/a | n/a | Direct Index Lookup (`d7f8f8_idx`) |
+| **Lab E: Course Count Aggregate** | Redis Caching (TTL 300s) | 1 SQL Query (DB Hit) | 0 SQL Query (Cache Hit) | ~15.00 ms | <1.00 ms | Instant In-Memory Fetch |
+
+*\*Catatan: Pada dataset lokal, fluktuasi waktu I/O dipengaruhi oleh OS file caching, namun query count terpangkas secara deterministik dari 51 menjadi 2 query.*
+
+---
+
+## 3. Detail Eksperimen & Analisis Optimasi
+
+### A. N+1 Problem & `select_related()`
+- **Masalah**: Iterasi 100 Course memicu 1 query awal ditambah 100 query terpisah untuk mengambil atribut `course.lecturer.username`.
+- **Solusi**: Menggunakan `Course.objects.select_related("lecturer")` yang melakukan SQL `JOIN` di sisi database.
+- **Hasil**: Query count terpangkas dari 101 query menjadi 1 query tunggal.
+
+### B. Reverse ForeignKey & `prefetch_related()`
+- **Masalah**: Mengambil data relasi one-to-many (`course.lessons.all()`) pada 50 Course memicu 51 query database terpisah.
+- **Solusi**: Menggunakan `Course.objects.prefetch_related("lessons")`.
+- **Hasil**: Django mengeksekusi 2 query terpisah (1 query parent dan 1 query `IN` untuk child), menghindari ledakan query linear.
+
+### C. Database Indexing & `QuerySet.explain()`
+- **Masalah**: Pencarian `Course.objects.filter(is_active=True, title="Course 500")` menjalankan *Full Table Scan* (`SCAN catalog_course`) pada 10.000 baris data.
+- **Solusi**: Menambahkan composite index `models.Index(fields=["is_active", "title"])` pada `Meta` model.
+- **Hasil**: Eksekusi plan berubah menjadi `SEARCH catalog_course USING INDEX catalog_cou_is_acti_d7f8f8_idx`.
+
+### D. Redis Caching & Invalidation Strategy
+- **Strategi**: Menyimpan hasil query agregasi berat (`Course.objects.filter(is_active=True).count()`) ke Redis menggunakan key `test_lms_key` dengan TTL 300 detik.
+- **Cache Hit / Miss**: Data pertama kali diambil langsung dari database (Cache Miss) lalu disimpan ke memori Redis. Panggilan berikutnya dilayani langsung oleh Redis tanpa menyentuh database (Cache Hit).
+- **Invalidation**: Menerapkan `cache.delete("test_lms_key")` secara terprogram setiap kali ada penambahan, pembaruan, atau penghapusan data `Course` untuk mencegah *stale data*.
+
+---
+
+## 4. Trade-off & Risk Analysis
+- **Indexing Overhead**: Indeks mempercepat operasi `SELECT`/filter, namun menambah alokasi penyimpanan disk dan menimbulkan overhead waktu pada operasi `INSERT`, `UPDATE`, dan `DELETE`.
+- **Cache Staleness**: Caching membebaskan database dari beban baca tinggi, tetapi membutuhkan mekanisme invalidasi data yang konsisten agar pengguna tidak melihat data usang.
+
+---
+
+## 5. Cara Menjalankan Project & Pengujian
+
+1. **Jalankan Redis Container**:
+   ```cmd
+   docker compose up -d redis
+
 # Modul 4: Django Models & ORM (Week 4)
 
 ## Fitur & Implementasi
-- **Guided Labs (Catalog & Users App)**:
-  - Implementasi model `Course`, `Lesson`, `Student`, dan intermediate model `Enrollment`.
-  - Custom `User` model dengan role-based authentication (`ADMIN`, `LECTURER`, `STUDENT`).
-  - Custom QuerySet & Manager (`active()`, `search()`).
-  - Django Admin configuration & Management Command (`seed_demo`).
+- **Catalog & Users App**:
+  - Implementasi relational models: Course, Lesson, Student, dan Enrollment (Many-to-Many).
+  - Custom User model dengan role via AUTH_USER_MODEL = "users.User".
+  - Custom QuerySet & Manager (.active(), .search()).
+  - Django Admin register & Management Command (seed_demo).
 - **Mini Challenge (Library Domain)**:
-  - Model `Category`, `Book`, `Member`, dan `Borrowing`.
-  - ISBN uniqueness constraint & Custom QuerySet `.available()`.
+  - Model Category, Book, Member, dan Borrowing.
+  - Uniqueness constraint pada ISBN dan Custom QuerySet .available().
 - **Capstone Milestone 4 (Core LMS Models)**:
-  - Model `LMSCourse`, `Lesson`, `Enrollment`, `Assignment`, dan `Submission`.
-  - Unique constraints pada relasi enrollment dan submission.
-  - Automated Unit Tests (5/5 tests passed).
+  - Model LMSCourse, Enrollment, Lesson, Assignment, dan Submission.
+  - Constraint UniqueConstraint pada Enrollment dan Submission.
+  - Automated Unit Tests (5/5 tests passing).
 
 ## Menjalankan Unit Tests
 ```cmd
 python manage.py test
+
