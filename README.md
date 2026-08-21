@@ -67,3 +67,23 @@
 4. **Hentikan Stack:**
     ```cmd
     docker compose down
+
+# Modul 4: Django Models & ORM (Week 4)
+
+## Fitur & Implementasi
+- **Guided Labs (Catalog & Users App)**:
+  - Implementasi model `Course`, `Lesson`, `Student`, dan intermediate model `Enrollment`.
+  - Custom `User` model dengan role-based authentication (`ADMIN`, `LECTURER`, `STUDENT`).
+  - Custom QuerySet & Manager (`active()`, `search()`).
+  - Django Admin configuration & Management Command (`seed_demo`).
+- **Mini Challenge (Library Domain)**:
+  - Model `Category`, `Book`, `Member`, dan `Borrowing`.
+  - ISBN uniqueness constraint & Custom QuerySet `.available()`.
+- **Capstone Milestone 4 (Core LMS Models)**:
+  - Model `LMSCourse`, `Lesson`, `Enrollment`, `Assignment`, dan `Submission`.
+  - Unique constraints pada relasi enrollment dan submission.
+  - Automated Unit Tests (5/5 tests passed).
+
+## Menjalankan Unit Tests
+```cmd
+python manage.py test
