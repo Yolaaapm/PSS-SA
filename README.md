@@ -12,7 +12,7 @@
 - **Virtual Environment:** `.venv`
 - **Git:** 2.55.0
 - **IDE:** Visual Studio Code
-- **Docker Desktop:** Status Pending 
+- **Docker Desktop:** Installed / Running (WSL 2 backend)
 
 ### Ringkasan
 - Menyiapkan environment pengembangan backend (Python, Virtualenv, Git, VS Code).
