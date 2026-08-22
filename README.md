@@ -131,6 +131,88 @@ Dokumentasi eksperimen performa database, optimasi query ORM, pengujian indeks, 
    ```cmd
    docker compose up -d redis
 
+
+# Modul 6: REST API Development dengan Django Ninja (Week 6)
+
+Dokumentasi implementasi RESTful API, validasi skema (Pydantic), error handling standar, pagination, automated API testing, dan dokumentasi interaktif OpenAPI/Swagger pada Simple LMS.
+
+---
+
+## 1. Arsitektur & Spesifikasi Endpoint
+
+### A. Resource: Courses (`/api/courses/`)
+* `GET /api/courses/` - Mengambil daftar seluruh course dengan dukungan query parameter (`search`, `active`) dan pagination (`limit`, `offset`).
+* `POST /api/courses/` - Membuat record course baru dengan validasi schema `CourseIn` (minimal 3 karakter uppercase) dan error handling duplicate `code` (400 Bad Request).
+* `GET /api/courses/{course_id}` - Mengambil data spesifik course berdasarkan ID (404 Not Found jika tidak ada).
+* `PATCH /api/courses/{course_id}` - Partial update atribut course (`title`, `description`, `is_active`) menggunakan `CourseUpdate`.
+* `DELETE /api/courses/{course_id}` - Menghapus data course dari database (204 No Content).
+
+### B. Resource: Lessons (`/api/courses/lessons/`)
+* `GET /api/courses/lessons/` - Mengambil daftar lesson terdaftar dengan filter relasi `course_id` dan pagination teroptimasi `select_related('course')`.
+* `POST /api/courses/lessons/` - Membuat record lesson baru dengan validasi relasi terhadap ketersediaan parent course (404 Not Found jika `course_id` tidak valid).
+* `GET /api/courses/lessons/{lesson_id}` - Mengambil detail lesson spesifik berdasarkan ID.
+* `PATCH /api/courses/lessons/{lesson_id}` - Partial update atribut lesson (`title`, `content`, `order`).
+* `DELETE /api/courses/lessons/{lesson_id}` - Menghapus data lesson (204 No Content).
+
+---
+
+## 2. Dokumentasi Interaktif OpenAPI / Swagger UI
+
+Dokumentasi Swagger UI otomatis di-generate oleh Django Ninja dan dapat diakses saat server aktif pada alamat:
+* **Swagger UI URL**: `http://127.0.0.1:8000/api/docs`
+* **OpenAPI Schema JSON**: `http://127.0.0.1:8000/api/openapi.json`
+
+![Swagger Documentation](docs/week6_swagger_docs.png)
+
+---
+
+## 3. Postman API Collection
+
+Pengujian endpoint HTTP secara manual dan menyeluruh terdokumentasi dalam Postman Collection yang diekspor pada file:
+* **File Collection**: `Simple_LMS_API.postman_collection.json`
+* **Environment Variable**: `base_url = http://127.0.0.1:8000`
+* **Struktur Folder**:
+  * `Courses/` (List, Create, Detail, Update, Delete)
+  * `Lessons/` (List, Create, Detail, Update, Delete)
+
+---
+
+## 4. Panduan Setup & Menjalankan Server
+
+1. **Aktivasi Virtual Environment & Instalasi Dependensi**:
+   ```cmd
+   python -m venv .venv
+   .venv\Scripts\activate
+   pip install Django django-ninja
+
+2. **Migrasi Skema Database**:
+    ```cmd
+    python manage.py makemigrations courses
+    python manage.py migrate
+
+3. **Menjalankan Server Lokal**:
+    ```cmd
+    python manage.py runserver
+
+## 5. Menjalankan Automated API Tests
+
+**Pengujian otomatis mencakup skenario sukses (happy path) dan skenario penanganan error (duplicate validation, not found handling, partial payload)**:
+    ```cmd
+    python manage.py test courses
+
+**Hasil Pengujian**:
+
+* test_create_course_success -> HTTP 201 Created
+* test_create_course_duplicate_code_returns_400 -> HTTP 400 Bad Request
+* test_get_course_detail_success -> HTTP 200 OK
+* test_get_course_not_found_returns_404 -> HTTP 404 Not Found
+* test_patch_course_partial_update -> HTTP 200 OK
+* test_delete_course_returns_204 -> HTTP 204 No Content
+* test_create_lesson_success -> HTTP 201 Created
+* test_create_lesson_invalid_course_returns_404 -> HTTP 404 Not Found
+* test_get_lessons_filter_by_course -> HTTP 200 OK
+* test_delete_lesson_returns_204 -> HTTP 204 No Content
+
 # Modul 4: Django Models & ORM (Week 4)
 
 ## Fitur & Implementasi
